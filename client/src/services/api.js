@@ -1,0 +1,319 @@
+/**
+ * API SERVICE & FALLBACK DATA STORE
+ * Tích hợp Xác thực (Authentication) & Phân quyền (RBAC) 100% bám sát SQL_N4_BTL.sql
+ */
+
+const API_BASE = '/api';
+
+export const FALLBACK_CATEGORIES = [
+  { category_id: 1, category_name: 'Chính Sách & Nội Quy', display_vn: 'Chính Sách & Nội Quy', description: 'Các văn bản quy định, nội quy làm việc, bảo mật và chính sách nhân sự', doc_count: 8 },
+  { category_id: 2, category_name: 'Hợp Đồng & Pháp Lý', display_vn: 'Hợp Đồng & Pháp Lý', description: 'Mẫu hợp đồng kinh tế, NDA bảo mật, thỏa thuận hợp tác và hồ sơ pháp lý', doc_count: 8 },
+  { category_id: 3, category_name: 'Báo Cáo Tài Chính & Kế Toán', display_vn: 'Báo Cáo Tài Chính & Kế Toán', description: 'Báo cáo doanh thu, quyết toán thuế, kiểm toán và phân bổ ngân sách', doc_count: 6 },
+  { category_id: 4, category_name: 'Tài Liệu Kỹ Thuật & Dự Án', display_vn: 'Tài Liệu Kỹ Thuật & Dự Án', description: 'Kiến trúc hệ thống, tài liệu đặc tả SRS, tài liệu API và quy trình DevOps', doc_count: 9 },
+  { category_id: 5, category_name: 'Biểu Mẫu Hành Chính', display_vn: 'Biểu Mẫu Hành Chính', description: 'Các mẫu đơn đề xuất, thanh toán tạm ứng, đơn nghỉ phép và bàn giao tài sản', doc_count: 6 },
+  { category_id: 6, category_name: 'Đào Tạo & Hướng Dẫn', display_vn: 'Đào Tạo & Hướng Dẫn', description: 'Giáo trình đào tạo, tài liệu Onboarding nhân sự mới và cẩm nang kỹ năng', doc_count: 9 },
+  { category_id: 7, category_name: 'Biên Bản Họp & Nghị Quyết', display_vn: 'Biên Bản Họp & Nghị Quyết', description: 'Biên bản các phiên họp giao ban, đại hội cổ đông và nghị quyết chiến lược', doc_count: 2 },
+  { category_id: 8, category_name: 'Hồ Sơ Thuế & Ngân Sách', display_vn: 'Hồ Sơ Thuế & Ngân Sách', description: 'Hồ sơ quyết toán thuế, dự toán chi tiêu và phân bổ dòng tiền hàng năm', doc_count: 2 }
+];
+
+export const FALLBACK_DEPARTMENTS = [
+  { dept_id: 1, dept_name: 'Ban Giám Đốc', description: 'Cơ quan điều hành chiến lược và ban hành quy chế cấp cao' },
+  { dept_id: 2, dept_name: 'Phòng Nhân Sự', description: 'Quản lý nhân sự, tuyển dụng, đào tạo, chính sách và tiền lương' },
+  { dept_id: 3, dept_name: 'Phòng Kế Toán & Tài Chính', description: 'Quản lý tài chính, dòng tiền, ngân sách, hóa đơn và quyết toán thuế' },
+  { dept_id: 4, dept_name: 'Phòng Kỹ Thuật & CNTT', description: 'Nghiên cứu phát triển phần mềm, hạ tầng máy chủ và an toàn thông tin' },
+  { dept_id: 5, dept_name: 'Phòng Kinh Doanh & Marketing', description: 'Phát triển thị trường, quan hệ đối tác khách hàng và thương mại' }
+];
+
+// 10 Tài khoản người dùng mẫu từ SQL_N4_BTL.sql (Mật khẩu mặc định: 'password')
+export const FALLBACK_USERS = [
+  { user_id: 1, full_name: 'Nguyen Van An', email: 'an.nguyen@example.com', role_id: 1, role_name: 'Admin', dept_id: 1, dept_name: 'Ban Giám Đốc' },
+  { user_id: 2, full_name: 'Tran Thi Binh', email: 'binh.tran@example.com', role_id: 1, role_name: 'Admin', dept_id: 2, dept_name: 'Phòng Nhân Sự' },
+  { user_id: 3, full_name: 'Le Minh Cuong', email: 'cuong.le@example.com', role_id: 2, role_name: 'Staff', dept_id: 4, dept_name: 'Phòng Kỹ Thuật & CNTT' },
+  { user_id: 4, full_name: 'Pham Thu Dung', email: 'dung.pham@example.com', role_id: 2, role_name: 'Staff', dept_id: 3, dept_name: 'Phòng Kế Toán & Tài Chính' },
+  { user_id: 5, full_name: 'Hoang Van Em', email: 'em.hoang@example.com', role_id: 2, role_name: 'Staff', dept_id: 2, dept_name: 'Phòng Nhân Sự' },
+  { user_id: 6, full_name: 'Vu Thi Giang', email: 'giang.vu@example.com', role_id: 2, role_name: 'Staff', dept_id: 4, dept_name: 'Phòng Kỹ Thuật & CNTT' },
+  { user_id: 7, full_name: 'Ngo Van Hai', email: 'hai.ngo@example.com', role_id: 2, role_name: 'Staff', dept_id: 5, dept_name: 'Phòng Kinh Doanh & Marketing' },
+  { user_id: 8, full_name: 'Do Thi Linh', email: 'linh.do@example.com', role_id: 2, role_name: 'Staff', dept_id: 3, dept_name: 'Phòng Kế Toán & Tài Chính' },
+  { user_id: 9, full_name: 'Bui Van Minh', email: 'minh.bui@example.com', role_id: 2, role_name: 'Staff', dept_id: 4, dept_name: 'Phòng Kỹ Thuật & CNTT' },
+  { user_id: 10, full_name: 'Dang Thi Nga', email: 'nga.dang@example.com', role_id: 2, role_name: 'Staff', dept_id: 2, dept_name: 'Phòng Nhân Sự' }
+];
+
+// 50 Tài liệu mẫu nội bộ (Khớp 100% với dữ liệu SQL_N4_BTL.sql)
+export const FALLBACK_DOCUMENTS = [
+  // Nhóm 1: Chính Sách & Nội Quy (cat: 1)
+  { doc_id: 1, title: 'Noi_Quy_Lao_Dong_Cong_Ty_2025.pdf', description: 'Quy định giờ giấc làm việc, tác phong công sở, kỷ luật lao động và an toàn vệ sinh.', file_path: 'uploads/sample-noi-quy-lao-dong-2025.pdf', file_type: 'pdf', file_size: 2450.50, download_count: 154, category_id: 1, category_name: 'Chính Sách & Nội Quy', uploaded_by: 1, uploader_name: 'Nguyen Van An', dept_name: 'Ban Giám Đốc', created_at: '2025-01-15 09:30:00' },
+  { doc_id: 2, title: 'Chinh_Sach_Lam_Viec_Tu_Xa_Hybrid.docx', description: 'Chính sách làm việc remote kết hợp lên văn phòng cho kỹ sư công nghệ.', file_path: 'uploads/sample-chinh-sach-remote.docx', file_type: 'docx', file_size: 1230.75, download_count: 89, category_id: 1, category_name: 'Chính Sách & Nội Quy', uploaded_by: 2, uploader_name: 'Tran Thi Binh', dept_name: 'Phòng Nhân Sự', created_at: '2025-01-20 14:15:00' },
+  { doc_id: 3, title: 'Quy_Che_Bao_Mat_Thong_Tin_Doanh_Nghiep.pdf', description: 'Quy tắc bảo mật mã nguồn dự án, dữ liệu khách hàng và bí mật kinh doanh.', file_path: 'uploads/sample-quy-che-bao-mat.pdf', file_type: 'pdf', file_size: 3120.00, download_count: 210, category_id: 1, category_name: 'Chính Sách & Nội Quy', uploaded_by: 1, uploader_name: 'Nguyen Van An', dept_name: 'Ban Giám Đốc', created_at: '2025-01-22 11:00:00' },
+  { doc_id: 4, title: 'So_Tay_Van_Hoa_Gia_Tri_Cot_Loi.pdf', description: 'Tài liệu giới thiệu tầm nhìn, sứ mệnh và 6 giá trị cốt lõi của công ty.', file_path: 'uploads/sample-so-tay-van-hoa.pdf', file_type: 'pdf', file_size: 5420.25, download_count: 178, category_id: 1, category_name: 'Chính Sách & Nội Quy', uploaded_by: 2, uploader_name: 'Tran Thi Binh', dept_name: 'Phòng Nhân Sự', created_at: '2025-02-05 16:20:00' },
+  { doc_id: 5, title: 'Quy_Dinh_Khen_Thuong_Ky_Luat_Q1.docx', description: 'Khung đánh giá KPI định kỳ và mức thưởng thành tích dự án quý 1.', file_path: 'uploads/sample-khen-thuong-ky-luat.docx', file_type: 'docx', file_size: 980.40, download_count: 67, category_id: 1, category_name: 'Chính Sách & Nội Quy', uploaded_by: 5, uploader_name: 'Hoang Van Em', dept_name: 'Phòng Nhân Sự', created_at: '2025-03-01 10:00:00' },
+  { doc_id: 6, title: 'Chinh_Sach_Bao_Hiem_Suc_Khoe_Toan_Dien.pdf', description: 'Quyền lợi gói bảo hiểm sức khỏe cao cấp mở rộng dành cho nhân viên chính thức.', file_path: 'uploads/sample-noi-quy-lao-dong-2025.pdf', file_type: 'pdf', file_size: 1840.00, download_count: 122, category_id: 1, category_name: 'Chính Sách & Nội Quy', uploaded_by: 10, uploader_name: 'Dang Thi Nga', dept_name: 'Phòng Nhân Sự', created_at: '2025-03-05 14:20:00' },
+  { doc_id: 7, title: 'Quy_Dinh_Su_Dung_Thiet_Bi_Cong_Nghe.docx', description: 'Tiêu chuẩn bảo quản máy tính laptop, tài khoản truy cập VPN và tài sản phần cứng.', file_path: 'uploads/sample-chinh-sach-remote.docx', file_type: 'docx', file_size: 1150.20, download_count: 95, category_id: 1, category_name: 'Chính Sách & Nội Quy', uploaded_by: 3, uploader_name: 'Le Minh Cuong', dept_name: 'Phòng Kỹ Thuật & CNTT', created_at: '2025-03-08 09:10:00' },
+  { doc_id: 8, title: 'Quy_Che_Tiep_Khach_Va_Cong_Tac_Phi.pdf', description: 'Định mức chi tiêu khi đi công tác trong và ngoài nước, tiêu chuẩn khách sạn vé bay.', file_path: 'uploads/sample-quy-che-bao-mat.pdf', file_type: 'pdf', file_size: 1670.50, download_count: 74, category_id: 1, category_name: 'Chính Sách & Nội Quy', uploaded_by: 4, uploader_name: 'Pham Thu Dung', dept_name: 'Phòng Kế Toán & Tài Chính', created_at: '2025-03-12 11:30:00' },
+
+  // Nhóm 2: Hợp Đồng & Pháp Lý (cat: 2)
+  { doc_id: 9, title: 'Mau_Hop_Dong_Lao_Dong_Chuan_2025.docx', description: 'Mẫu hợp đồng lao động xác định thời hạn 12 đến 36 tháng chuẩn Bộ Luật Lao Động.', file_path: 'uploads/sample-hop-dong-lao-dong.docx', file_type: 'docx', file_size: 850.20, download_count: 120, category_id: 2, category_name: 'Hợp Đồng & Pháp Lý', uploaded_by: 2, uploader_name: 'Tran Thi Binh', dept_name: 'Phòng Nhân Sự', created_at: '2025-01-18 10:45:00' },
+  { doc_id: 10, title: 'Thoa_Thuan_Bao_Mat_NDA_Song_Ngu.pdf', description: 'Thỏa thuận bảo mật thông tin song ngữ Anh - Việt áp dụng cho nhân sự cốt cán.', file_path: 'uploads/sample-nda-template.pdf', file_type: 'pdf', file_size: 1560.80, download_count: 145, category_id: 2, category_name: 'Hợp Đồng & Pháp Lý', uploaded_by: 1, uploader_name: 'Nguyen Van An', dept_name: 'Ban Giám Đốc', created_at: '2025-01-25 15:30:00' },
+  { doc_id: 11, title: 'Hop_Dong_Cung_Cap_Dich_Vu_Phan_Mem_B2B.docx', description: 'Mẫu hợp đồng triển khai giải pháp chuyển đổi số cho khối khách hàng doanh nghiệp.', file_path: 'uploads/sample-hop-dong-dich-vu-b2b.docx', file_type: 'docx', file_size: 2140.60, download_count: 93, category_id: 2, category_name: 'Hợp Đồng & Pháp Lý', uploaded_by: 7, uploader_name: 'Ngo Van Hai', dept_name: 'Phòng Kinh Doanh & Marketing', created_at: '2025-02-12 09:15:00' },
+  { doc_id: 12, title: 'Hop_Dong_Mua_Sam_May_Chu_Cloud.docx', description: 'Hợp đồng mua sắm hạ tầng Dedicated Server và dịch vụ lưu trữ dữ liệu đám mây.', file_path: 'uploads/sample-hop-dong-mua-sam.docx', file_type: 'docx', file_size: 1780.00, download_count: 48, category_id: 2, category_name: 'Hợp Đồng & Pháp Lý', uploaded_by: 3, uploader_name: 'Le Minh Cuong', dept_name: 'Phòng Kỹ Thuật & CNTT', created_at: '2025-02-28 14:00:00' },
+  { doc_id: 13, title: 'Ho_So_Dang_Ky_Ban_Quyen_Phan_Mem_ERP.pdf', description: 'Hồ sơ chứng nhận quyền sở hữu tác giả đối với hệ thống lõi DocuCorp ERP.', file_path: 'uploads/sample-ho-so-ban-quyen.pdf', file_type: 'pdf', file_size: 4650.00, download_count: 35, category_id: 2, category_name: 'Hợp Đồng & Pháp Lý', uploaded_by: 3, uploader_name: 'Le Minh Cuong', dept_name: 'Phòng Kỹ Thuật & CNTT', created_at: '2025-03-15 11:20:00' },
+  { doc_id: 14, title: 'Mau_Hop_Dong_Dai_Ly_Phan_Phoi_Doc_Quyen.docx', description: 'Hợp đồng nguyên tắc bổ nhiệm đại lý phân phối sản phẩm phần mềm khu vực miền Trung.', file_path: 'uploads/sample-hop-dong-dich-vu-b2b.docx', file_type: 'docx', file_size: 2310.00, download_count: 52, category_id: 2, category_name: 'Hợp Đồng & Pháp Lý', uploaded_by: 7, uploader_name: 'Ngo Van Hai', dept_name: 'Phòng Kinh Doanh & Marketing', created_at: '2025-03-18 15:00:00' },
+  { doc_id: 15, title: 'Thoa_Thuan_Cap_Phep_Ban_Quyen_SaaS.pdf', description: 'Điều khoản sử dụng phần mềm dạng dịch vụ dành cho người dùng cuối (EULA License).', file_path: 'uploads/sample-nda-template.pdf', file_type: 'pdf', file_size: 1980.00, download_count: 88, category_id: 2, category_name: 'Hợp Đồng & Pháp Lý', uploaded_by: 1, uploader_name: 'Nguyen Van An', dept_name: 'Ban Giám Đốc', created_at: '2025-03-22 10:30:00' },
+  { doc_id: 16, title: 'Bien_Ban_Thanh_Ly_Hop_Dong_Kinh_Te.docx', description: 'Mẫu biên bản nghiệm thu và thanh lý hợp đồng cung ứng dịch vụ phần mềm.', file_path: 'uploads/sample-hop-dong-mua-sam.docx', file_type: 'docx', file_size: 920.40, download_count: 61, category_id: 2, category_name: 'Hợp Đồng & Pháp Lý', uploaded_by: 4, uploader_name: 'Pham Thu Dung', dept_name: 'Phòng Kế Toán & Tài Chính', created_at: '2025-03-25 16:15:00' },
+
+  // Nhóm 3: Báo Cáo Tài Chính & Kế Toán (cat: 3)
+  { doc_id: 17, title: 'Bao_Cao_Tai_Chinh_Nam_2024_Kiem_Toan.xlsx', description: 'Báo cáo tài chính năm 2024 đã được kiểm toán độc lập xác nhận không ngoại trừ.', file_path: 'uploads/sample-bctc-2024-kiem-toan.xlsx', file_type: 'xlsx', file_size: 6890.50, download_count: 112, category_id: 3, category_name: 'Báo Cáo Tài Chính & Kế Toán', uploaded_by: 4, uploader_name: 'Pham Thu Dung', dept_name: 'Phòng Kế Toán & Tài Chính', created_at: '2025-01-30 16:45:00' },
+  { doc_id: 18, title: 'Ke_Hoach_Ngan_Sach_Van_Hanh_Nam_2025.xlsx', description: 'Dự toán định mức chi phí R&D, nhân sự và marketing toàn công ty năm 2025.', file_path: 'uploads/sample-ngan-sach-2025.xlsx', file_type: 'xlsx', file_size: 4320.00, download_count: 85, category_id: 3, category_name: 'Báo Cáo Tài Chính & Kế Toán', uploaded_by: 4, uploader_name: 'Pham Thu Dung', dept_name: 'Phòng Kế Toán & Tài Chính', created_at: '2025-02-02 08:30:00' },
+  { doc_id: 19, title: 'Bao_Cao_Doanh_Thu_Q1_2025.xlsx', description: 'Phân tích chi tiết dòng tiền và mức độ hoàn thành chỉ tiêu doanh thu quý 1.', file_path: 'uploads/sample-doanh-thu-q1-2025.xlsx', file_type: 'xlsx', file_size: 3780.20, download_count: 64, category_id: 3, category_name: 'Báo Cáo Tài Chính & Kế Toán', uploaded_by: 8, uploader_name: 'Do Thi Linh', dept_name: 'Phòng Kế Toán & Tài Chính', created_at: '2025-04-05 15:10:00' },
+  { doc_id: 20, title: 'Bang_Quyet_Toan_Thue_TNDN_2024.pdf', description: 'Hồ sơ quyết toán thuế TNDN và giấy xác nhận hoàn tất nghĩa vụ nộp ngân sách.', file_path: 'uploads/sample-quyet-toan-thue.pdf', file_type: 'pdf', file_size: 2950.40, download_count: 53, category_id: 3, category_name: 'Báo Cáo Tài Chính & Kế Toán', uploaded_by: 8, uploader_name: 'Do Thi Linh', dept_name: 'Phòng Kế Toán & Tài Chính', created_at: '2025-04-10 10:25:00' },
+  { doc_id: 21, title: 'Bao_Cao_Kiem_Toan_Chi_Phi_Cloud_Server.docx', description: 'Đánh giá tính tối ưu của cụm tài nguyên AWS và giải pháp tiết kiệm ngân sách 20%.', file_path: 'uploads/sample-kiem-toan-cntt.docx', file_type: 'docx', file_size: 1890.30, download_count: 41, category_id: 3, category_name: 'Báo Cáo Tài Chính & Kế Toán', uploaded_by: 4, uploader_name: 'Pham Thu Dung', dept_name: 'Phòng Kế Toán & Tài Chính', created_at: '2025-04-18 13:40:00' },
+  { doc_id: 22, title: 'Phan_Tich_Ty_Suat_Loi_Nhuan_Duan_Aries.xlsx', description: 'Bảng tính IRR và ROI của gói đầu tư giải pháp văn phòng số cho đối tác lớn.', file_path: 'uploads/sample-doanh-thu-q1-2025.xlsx', file_type: 'xlsx', file_size: 3150.00, download_count: 47, category_id: 3, category_name: 'Báo Cáo Tài Chính & Kế Toán', uploaded_by: 8, uploader_name: 'Do Thi Linh', dept_name: 'Phòng Kế Toán & Tài Chính', created_at: '2025-04-20 09:20:00' },
+  { doc_id: 23, title: 'Bao_Cao_Luu_Chuyen_Tien_Te_Thang_3.xlsx', description: 'Đối soát các nguồn thu - chi thực tế và dự báo dòng tiền lưu động cho tháng tới.', file_path: 'uploads/sample-bctc-2024-kiem-toan.xlsx', file_type: 'xlsx', file_size: 2740.00, download_count: 39, category_id: 8, category_name: 'Hồ Sơ Thuế & Ngân Sách', uploaded_by: 4, uploader_name: 'Pham Thu Dung', dept_name: 'Phòng Kế Toán & Tài Chính', created_at: '2025-04-22 14:45:00' },
+  { doc_id: 24, title: 'Bao_Cao_Quan_Tri_Rui_Ro_Tai_Chinh.pdf', description: 'Biện pháp phòng ngừa rủi ro tỷ giá ngoại hối và các khoản nợ quá hạn quý 1.', file_path: 'uploads/sample-quyet-toan-thue.pdf', file_type: 'pdf', file_size: 3420.00, download_count: 33, category_id: 8, category_name: 'Hồ Sơ Thuế & Ngân Sách', uploaded_by: 8, uploader_name: 'Do Thi Linh', dept_name: 'Phòng Kế Toán & Tài Chính', created_at: '2025-04-25 11:00:00' },
+
+  // Nhóm 4: Tài Liệu Kỹ Thuật & Dự Án (cat: 4)
+  { doc_id: 25, title: 'Kien_Truc_He_Thong_Microservices_v3.pdf', description: 'Thiết kế phân tầng Gateway, Kafka Broker, gRPC Service và DB Cluster chuẩn 3NF.', file_path: 'uploads/sample-kientruc-microservices.pdf', file_type: 'pdf', file_size: 8920.00, download_count: 240, category_id: 4, category_name: 'Tài Liệu Kỹ Thuật & Dự Án', uploaded_by: 3, uploader_name: 'Le Minh Cuong', dept_name: 'Phòng Kỹ Thuật & CNTT', created_at: '2025-02-15 10:00:00' },
+  { doc_id: 26, title: 'Tieu_Chuan_Viet_Code_GitFlow_Standard.pdf', description: 'Quy tắc đặt tên biến, kiến trúc Clean Code, tiêu chí sonarQube và quy trình PR.', file_path: 'uploads/sample-coding-standard-gitflow.pdf', file_type: 'pdf', file_size: 2150.70, download_count: 310, category_id: 4, category_name: 'Tài Liệu Kỹ Thuật & Dự Án', uploaded_by: 6, uploader_name: 'Vu Thi Giang', dept_name: 'Phòng Kỹ Thuật & CNTT', created_at: '2025-02-20 14:00:00' },
+  { doc_id: 27, title: 'Dac_Ta_Yeu_Cau_Phan_Mem_SRS_CRM.docx', description: 'Tài liệu mô tả chức năng, sơ đồ use-case và luồng dữ liệu cho phân hệ CRM.', file_path: 'uploads/sample-srs-crm-project.docx', file_type: 'docx', file_size: 5430.10, download_count: 185, category_id: 4, category_name: 'Tài Liệu Kỹ Thuật & Dự Án', uploaded_by: 3, uploader_name: 'Le Minh Cuong', dept_name: 'Phòng Kỹ Thuật & CNTT', created_at: '2025-03-05 09:15:00' },
+  { doc_id: 28, title: 'Kich_Ban_Kiem_Thu_Tu_Dong_Jest_Supertest.xlsx', description: 'Bộ 120 test case kiểm thử tự động API bảo mật và toàn vẹn dữ liệu cơ sở dữ liệu.', file_path: 'uploads/sample-test-plan-automation.xlsx', file_type: 'xlsx', file_size: 3120.50, download_count: 95, category_id: 4, category_name: 'Tài Liệu Kỹ Thuật & Dự Án', uploaded_by: 9, uploader_name: 'Bui Van Minh', dept_name: 'Phòng Kỹ Thuật & CNTT', created_at: '2025-03-12 11:30:00' },
+  { doc_id: 29, title: 'Huong_Dan_Van_Hanh_Docker_Kubernetes.pdf', description: 'Quy trình đóng gói Dockerfile, triển khai Helm chart và giám sát cụm Pods K8s.', file_path: 'uploads/sample-huong-dan-docker-cicd.pdf', file_type: 'pdf', file_size: 6740.00, download_count: 275, category_id: 4, category_name: 'Tài Liệu Kỹ Thuật & Dự Án', uploaded_by: 6, uploader_name: 'Vu Thi Giang', dept_name: 'Phòng Kỹ Thuật & CNTT', created_at: '2025-03-22 15:45:00' },
+  { doc_id: 30, title: 'Ky_Thuat_Toi_Uu_Truy_Van_MySQL_Index.pdf', description: 'Hướng dẫn đánh chỉ mục Composite Index, tối ưu EXPLAIN và loại bỏ Full Table Scan.', file_path: 'uploads/sample-toi-uu-mysql.pdf', file_type: 'pdf', file_size: 4380.00, download_count: 290, category_id: 4, category_name: 'Tài Liệu Kỹ Thuật & Dự Án', uploaded_by: 9, uploader_name: 'Bui Van Minh', dept_name: 'Phòng Kỹ Thuật & CNTT', created_at: '2025-04-02 08:45:00' },
+  { doc_id: 31, title: 'Ke_Hoach_Khoi_Phuc_Sau_Tham_Hoa_DRP.docx', description: 'Quy trình sao lưu tự động hằng ngày và kịch bản khôi phục DB trong vòng 15 phút.', file_path: 'uploads/sample-disaster-recovery.docx', file_type: 'docx', file_size: 3620.00, download_count: 130, category_id: 4, category_name: 'Tài Liệu Kỹ Thuật & Dự Án', uploaded_by: 3, uploader_name: 'Le Minh Cuong', dept_name: 'Phòng Kỹ Thuật & CNTT', created_at: '2025-04-12 16:00:00' },
+  { doc_id: 32, title: 'Dac_Ta_Giao_Thuc_API_RESTful_v2.pdf', description: 'Tài liệu Swagger OpenAPI mô tả chi tiết 25 endpoint quản trị dữ liệu.', file_path: 'uploads/sample-kientruc-microservices.pdf', file_type: 'pdf', file_size: 5120.00, download_count: 205, category_id: 4, category_name: 'Tài Liệu Kỹ Thuật & Dự Án', uploaded_by: 6, uploader_name: 'Vu Thi Giang', dept_name: 'Phòng Kỹ Thuật & CNTT', created_at: '2025-04-15 10:15:00' },
+  { doc_id: 33, title: 'Chinh_Sach_Bao_Mat_Zero_Trust_Network.pdf', description: 'Mô hình bảo vệ mạng nội bộ không tin cậy tuyệt đối, áp dụng xác thực mTLS và JWT.', file_path: 'uploads/sample-toi-uu-mysql.pdf', file_type: 'pdf', file_size: 4180.00, download_count: 168, category_id: 4, category_name: 'Tài Liệu Kỹ Thuật & Dự Án', uploaded_by: 9, uploader_name: 'Bui Van Minh', dept_name: 'Phòng Kỹ Thuật & CNTT', created_at: '2025-04-18 13:30:00' },
+
+  // Nhóm 5: Biểu Mẫu Hành Chính (cat: 5)
+  { doc_id: 34, title: 'Bieu_Mau_De_Xuat_Mua_Sam_Thiet_Bi.docx', description: 'Mẫu phiếu đề nghị cấp sắm máy tính bàn, linh kiện và thiết bị ngoại vi văn phòng.', file_path: 'uploads/sample-de-xuat-mua-sam.docx', file_type: 'docx', file_size: 620.50, download_count: 160, category_id: 5, category_name: 'Biểu Mẫu Hành Chính', uploaded_by: 5, uploader_name: 'Hoang Van Em', dept_name: 'Phòng Nhân Sự', created_at: '2025-01-28 08:30:00' },
+  { doc_id: 35, title: 'Don_Xin_Nghi_Phep_Huong_Luong_2025.docx', description: 'Mẫu đơn xin nghỉ phép năm, nghỉ chế độ dưỡng sức và thai sản dành cho nhân viên.', file_path: 'uploads/sample-don-xin-nghi-phep.docx', file_type: 'docx', file_size: 450.00, download_count: 320, category_id: 5, category_name: 'Biểu Mẫu Hành Chính', uploaded_by: 2, uploader_name: 'Tran Thi Binh', dept_name: 'Phòng Nhân Sự', created_at: '2025-02-08 10:15:00' },
+  { doc_id: 36, title: 'Phieu_De_Nghi_Thanh_Toan_Tam_Ung.xlsx', description: 'Mẫu bảng kê chứng từ hóa đơn hợp lệ kèm phiếu chi tiền mặt hoặc chuyển khoản.', file_path: 'uploads/sample-de-nghi-thanh-toan.xlsx', file_type: 'xlsx', file_size: 890.30, download_count: 215, category_id: 5, category_name: 'Biểu Mẫu Hành Chính', uploaded_by: 8, uploader_name: 'Do Thi Linh', dept_name: 'Phòng Kế Toán & Tài Chính', created_at: '2025-02-22 14:50:00' },
+  { doc_id: 37, title: 'Phieu_Danh_Gia_Ket_Qua_Thu_Viec.docx', description: 'Bảng thẩm định năng lực thử việc sau 2 tháng để làm căn cứ ký HĐLĐ chính thức.', file_path: 'uploads/sample-danh-gia-thu-viec.docx', file_type: 'docx', file_size: 710.00, download_count: 105, category_id: 5, category_name: 'Biểu Mẫu Hành Chính', uploaded_by: 5, uploader_name: 'Hoang Van Em', dept_name: 'Phòng Nhân Sự', created_at: '2025-03-18 11:00:00' },
+  { doc_id: 38, title: 'Bien_Ban_Ban_Giao_Tai_San_Thiet_Bi.docx', description: 'Biên bản kiểm kê thiết bị bàn giao khi nhân sự mới nhận việc hoặc thôi việc.', file_path: 'uploads/sample-bien-ban-ban-giao.docx', file_type: 'docx', file_size: 580.40, download_count: 88, category_id: 5, category_name: 'Biểu Mẫu Hành Chính', uploaded_by: 10, uploader_name: 'Dang Thi Nga', dept_name: 'Phòng Nhân Sự', created_at: '2025-04-03 09:30:00' },
+  { doc_id: 39, title: 'Phieu_Dang_Ky_Lam_Them_Gio_Overtime.docx', description: 'Mẫu đăng ký lịch trực ca và làm thêm giờ dự án có chữ ký phê duyệt của quản lý.', file_path: 'uploads/sample-don-xin-nghi-phep.docx', file_type: 'docx', file_size: 510.00, download_count: 142, category_id: 7, category_name: 'Biên Bản Họp & Nghị Quyết', uploaded_by: 3, uploader_name: 'Le Minh Cuong', dept_name: 'Phòng Kỹ Thuật & CNTT', created_at: '2025-04-06 15:20:00' },
+  { doc_id: 40, title: 'Giay_De_Nghi_Di_Cong_Tac_Nuoc_Ngoai.pdf', description: 'Mẫu trình Ban Giám Đốc phê duyệt lịch công tác xúc tiến thương mại quốc tế.', file_path: 'uploads/sample-de-xuat-mua-sam.docx', file_type: 'pdf', file_size: 1240.00, download_count: 76, category_id: 7, category_name: 'Biên Bản Họp & Nghị Quyết', uploaded_by: 7, uploader_name: 'Ngo Van Hai', dept_name: 'Phòng Kinh Doanh & Marketing', created_at: '2025-04-10 11:45:00' },
+  { doc_id: 41, title: 'Phieu_Yeu_Cau_Ho_Tro_Ky_Thuat_IT.docx', description: 'Phiếu yêu cầu mở quyền truy cập máy chủ, reset mật khẩu và khắc phục sự cố mạng.', file_path: 'uploads/sample-bien-ban-ban-giao.docx', file_type: 'docx', file_size: 490.00, download_count: 195, category_id: 5, category_name: 'Biểu Mẫu Hành Chính', uploaded_by: 9, uploader_name: 'Bui Van Minh', dept_name: 'Phòng Kỹ Thuật & CNTT', created_at: '2025-04-14 08:30:00' },
+
+  // Nhóm 6: Đào Tạo & Hướng Dẫn (cat: 6)
+  { doc_id: 42, title: 'Slide_Dao_Tao_Nhap_Mon_Onboarding_Kit.pptx', description: 'Tài liệu thuyết trình chào đón nhân sự mới, giới thiệu văn hóa và phần mềm nội bộ.', file_path: 'uploads/sample-onboarding-presentation.pptx', file_type: 'pptx', file_size: 12450.00, download_count: 260, category_id: 6, category_name: 'Đào Tạo & Hướng Dẫn', uploaded_by: 2, uploader_name: 'Tran Thi Binh', dept_name: 'Phòng Nhân Sự', created_at: '2025-01-16 13:00:00' },
+  { doc_id: 43, title: 'Khoa_Hoc_Nhan_Thuc_An_Ninh_Mang_2025.pdf', description: 'Cẩm nang phòng chống thư rác lừa đảo Phishing, mã độc ransomware và lộ lọt dữ liệu.', file_path: 'uploads/sample-security-awareness.pdf', file_type: 'pdf', file_size: 7340.00, download_count: 340, category_id: 6, category_name: 'Đào Tạo & Hướng Dẫn', uploaded_by: 6, uploader_name: 'Vu Thi Giang', dept_name: 'Phòng Kỹ Thuật & CNTT', created_at: '2025-02-25 15:20:00' },
+  { doc_id: 44, title: 'Cam_Nang_Giao_Tiep_Xu_Ly_Xung_Dot_Nhom.pdf', description: 'Kỹ năng làm việc nhóm, giao tiếp nội bộ hiệu quả và phương pháp giải quyết tranh chấp.', file_path: 'uploads/sample-ky-nang-giao-tiep.pdf', file_type: 'pdf', file_size: 3890.00, download_count: 142, category_id: 6, category_name: 'Đào Tạo & Hướng Dẫn', uploaded_by: 1, uploader_name: 'Nguyen Van An', dept_name: 'Ban Giám Đốc', created_at: '2025-03-20 16:30:00' },
+  { doc_id: 45, title: 'Huong_Dan_Su_Dung_DocuCorp_Portal.pdf', description: 'Tài liệu hướng dẫn tải lên, tìm kiếm và phân quyền tài liệu trên hệ thống DocuCorp.', file_path: 'uploads/sample-huong-dan-erp.pdf', file_type: 'pdf', file_size: 6120.00, download_count: 280, category_id: 6, category_name: 'Đào Tạo & Hướng Dẫn', uploaded_by: 3, uploader_name: 'Le Minh Cuong', dept_name: 'Phòng Kỹ Thuật & CNTT', created_at: '2025-04-08 10:40:00' },
+  { doc_id: 46, title: 'Playbook_Quy_Trinh_Ban_Hang_Va_CSKH.docx', description: 'Kịch bản gọi điện tư vấn sản phẩm phần mềm và quy trình chốt hợp đồng B2B.', file_path: 'uploads/sample-sales-playbook.docx', file_type: 'docx', file_size: 2850.00, download_count: 175, category_id: 6, category_name: 'Đào Tạo & Hướng Dẫn', uploaded_by: 7, uploader_name: 'Ngo Van Hai', dept_name: 'Phòng Kinh Doanh & Marketing', created_at: '2025-04-15 14:10:00' },
+  { doc_id: 47, title: 'Giao_Trinh_Dao_Tao_SQL_Chuan_3NF.pdf', description: 'Khóa học SQL căn bản đến nâng cao: Chuẩn hóa dữ liệu 3NF, Indexing và Query Tuning.', file_path: 'uploads/sample-toi-uu-mysql.pdf', file_type: 'pdf', file_size: 8400.00, download_count: 315, category_id: 6, category_name: 'Đào Tạo & Hướng Dẫn', uploaded_by: 3, uploader_name: 'Le Minh Cuong', dept_name: 'Phòng Kỹ Thuật & CNTT', created_at: '2025-04-19 16:00:00' },
+  { doc_id: 48, title: 'Huong_Dan_Phong_Chay_Chua_Chay_VP.pdf', description: 'Quy tắc thoát hiểm khẩn cấp và vị trí bình bọt chữa cháy tại các tầng tòa nhà.', file_path: 'uploads/sample-ky-nang-giao-tiep.pdf', file_type: 'pdf', file_size: 2900.00, download_count: 89, category_id: 6, category_name: 'Đào Tạo & Hướng Dẫn', uploaded_by: 10, uploader_name: 'Dang Thi Nga', dept_name: 'Phòng Nhân Sự', created_at: '2025-04-21 09:10:00' },
+  { doc_id: 49, title: 'Cam_Nang_Quan_Tri_Thoi_Gian_Cho_Dev.docx', description: 'Phương pháp quản lý công việc Pomodoro, Eisenhower và kỹ thuật tập trung chuyên sâu.', file_path: 'uploads/sample-sales-playbook.docx', file_type: 'docx', file_size: 1860.00, download_count: 134, category_id: 6, category_name: 'Đào Tạo & Hướng Dẫn', uploaded_by: 6, uploader_name: 'Vu Thi Giang', dept_name: 'Phòng Kỹ Thuật & CNTT', created_at: '2025-04-23 11:25:00' },
+  { doc_id: 50, title: 'Quy_Trinh_Danh_Gia_Hieu_Suat_OKRs.pdf', description: 'Hướng dẫn thiết lập mục tiêu then chốt OKRs và quy trình review hiệu quả quý.', file_path: 'uploads/sample-so-tay-van-hoa.pdf', file_type: 'pdf', file_size: 3750.00, download_count: 210, category_id: 6, category_name: 'Đào Tạo & Hướng Dẫn', uploaded_by: 1, uploader_name: 'Nguyen Van An', dept_name: 'Ban Giám Đốc', created_at: '2025-04-26 15:40:00' }
+];
+
+// Helper lấy Auth Headers từ localStorage
+export function getAuthHeaders() {
+  try {
+    const saved = localStorage.getItem('docucorp_user');
+    if (saved) {
+      const u = JSON.parse(saved);
+      return {
+        'Authorization': `Bearer ${u.user_id}`,
+        'x-user-id': String(u.user_id),
+        'x-role-id': String(u.role_id),
+        'x-role-name': u.role_name
+      };
+    }
+  } catch {}
+  return {};
+}
+
+// 1. API Đăng nhập
+export async function loginApi(email, password) {
+  try {
+    const res = await fetch(`${API_BASE}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+    if (data && data.success) {
+      return data;
+    }
+    if (data && data.message) {
+      return data;
+    }
+  } catch (err) {
+    console.warn('[API] Login fallback:', err);
+  }
+
+  // Fallback đăng nhập độc lập khi máy chủ Express/MySQL offline
+  const normalizedEmail = (email || '').trim().toLowerCase();
+  const foundUser = FALLBACK_USERS.find(u => 
+    u.email.toLowerCase() === normalizedEmail ||
+    u.email.toLowerCase().replace('@example.com', '@company.com') === normalizedEmail ||
+    normalizedEmail.split('@')[0] === u.email.toLowerCase().split('@')[0]
+  );
+
+  if (!foundUser) {
+    return {
+      success: false,
+      message: `Tài khoản email "${email}" không tồn tại trong hệ thống.`
+    };
+  }
+
+  if (password !== 'password') {
+    return {
+      success: false,
+      message: 'Mật khẩu không chính xác. Mật khẩu mặc định hệ thống là: "password".'
+    };
+  }
+
+  return {
+    success: true,
+    message: `Đăng nhập thành công! Chào mừng ${foundUser.full_name} (${foundUser.role_name}).`,
+    data: { ...foundUser }
+  };
+}
+
+export async function fetchHealth() {
+  try {
+    const res = await fetch(`${API_BASE}/health`);
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchCategories() {
+  try {
+    const res = await fetch(`${API_BASE}/categories`);
+    const data = await res.json();
+    if (data?.success && data.data?.length) return data.data;
+    return FALLBACK_CATEGORIES;
+  } catch {
+    return FALLBACK_CATEGORIES;
+  }
+}
+
+export async function fetchDepartments() {
+  try {
+    const res = await fetch(`${API_BASE}/departments`);
+    const data = await res.json();
+    if (data?.success && data.data?.length) return data.data;
+    return FALLBACK_DEPARTMENTS;
+  } catch {
+    return FALLBACK_DEPARTMENTS;
+  }
+}
+
+export async function fetchUsers() {
+  try {
+    const res = await fetch(`${API_BASE}/users`);
+    const data = await res.json();
+    if (data?.success && data.data?.length) return data.data;
+    return FALLBACK_USERS;
+  } catch {
+    return FALLBACK_USERS;
+  }
+}
+
+export async function fetchDocuments(params = {}) {
+  try {
+    const query = new URLSearchParams();
+    if (params.search) query.append('search', params.search);
+    if (params.category_id) query.append('category_id', params.category_id);
+    const res = await fetch(`${API_BASE}/documents?${query.toString()}`);
+    const data = await res.json();
+    if (data?.success && Array.isArray(data.data) && data.data.length) {
+      return data.data;
+    }
+    return FALLBACK_DOCUMENTS;
+  } catch {
+    return FALLBACK_DOCUMENTS;
+  }
+}
+
+export async function createDocumentApi(formData) {
+  try {
+    const res = await fetch(`${API_BASE}/documents`, {
+      method: 'POST',
+      headers: {
+        ...getAuthHeaders()
+      },
+      body: formData
+    });
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+export async function updateDocumentApi(id, payload) {
+  try {
+    const res = await fetch(`${API_BASE}/documents/${id}`, {
+      method: 'PUT',
+      headers: { 
+        'Content-Type': 'application/json',
+        ...getAuthHeaders()
+      },
+      body: JSON.stringify(payload)
+    });
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+export async function deleteDocumentApi(id) {
+  try {
+    const res = await fetch(`${API_BASE}/documents/${id}`, {
+      method: 'DELETE',
+      headers: {
+        ...getAuthHeaders()
+      }
+    });
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+export async function recordDownloadApi(id) {
+  try {
+    const res = await fetch(`${API_BASE}/documents/${id}/download`, {
+      method: 'POST',
+      headers: {
+        ...getAuthHeaders()
+      }
+    });
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchCategoryStats() {
+  try {
+    const res = await fetch(`${API_BASE}/stats/categories`);
+    const data = await res.json();
+    if (data?.success) return data.data;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchDepartmentStats() {
+  try {
+    const res = await fetch(`${API_BASE}/stats/departments`);
+    const data = await res.json();
+    if (data?.success) return data.data;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchTopUploaders() {
+  try {
+    const res = await fetch(`${API_BASE}/stats/top-uploaders`);
+    const data = await res.json();
+    if (data?.success) return data.data;
+    return null;
+  } catch {
+    return null;
+  }
+}

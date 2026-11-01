@@ -1,0 +1,247 @@
+{
+  "info": {
+    "name": "DocuCorp - Hệ Thống Quản Lý Tài Liệu Nội Bộ (BTL CSDL)",
+    "_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "description": "Bộ sưu tập kiểm thử toàn bộ API Backend Express.js & MySQL cho Đề tài Bài tập lớn Cơ sở dữ liệu",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Quản Lý Tài Liệu (Documents CRUD)",
+      "item": [
+        {
+          "name": "GET Lấy danh sách tài liệu (Tất cả)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/documents",
+              "host": ["{{base_url}}"],
+              "path": ["api", "documents"]
+            }
+          }
+        },
+        {
+          "name": "GET Tìm kiếm tài liệu theo từ khóa",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/documents?search=Hợp đồng",
+              "host": ["{{base_url}}"],
+              "path": ["api", "documents"],
+              "query": [
+                { "key": "search", "value": "Hợp đồng" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET Lọc tài liệu theo Danh mục (category_id)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/documents?category_id=4",
+              "host": ["{{base_url}}"],
+              "path": ["api", "documents"],
+              "query": [
+                { "key": "category_id", "value": "4" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET Lấy chi tiết tài liệu theo ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/documents/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "documents", "1"]
+            }
+          }
+        },
+        {
+          "name": "POST Thêm mới tài liệu (Upload File Multer)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "title", "value": "Tài Liệu Hướng Dẫn Bảo Mật 2025", "type": "text" },
+                { "key": "description", "value": "Hướng dẫn các nguyên tắc bảo mật mạng nội bộ công ty", "type": "text" },
+                { "key": "category_id", "value": "1", "type": "text" },
+                { "key": "uploaded_by", "value": "4", "type": "text" },
+                { "key": "file", "type": "file", "src": "" }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/documents",
+              "host": ["{{base_url}}"],
+              "path": ["api", "documents"]
+            }
+          }
+        },
+        {
+          "name": "PUT Cập nhật thông tin tài liệu",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                { "key": "title", "value": "Nội Quy Lao Động Công Ty Năm 2025 (Bản sửa đổi)" },
+                { "key": "description", "value": "Đã cập nhật thêm quy định thời gian làm việc linh hoạt." }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/documents/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "documents", "1"]
+            }
+          }
+        },
+        {
+          "name": "POST Ghi nhận lượt tải xuống (+1 download_count)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/documents/1/download",
+              "host": ["{{base_url}}"],
+              "path": ["api", "documents", "1", "download"]
+            }
+          }
+        },
+        {
+          "name": "GET Tải file nhị phân về máy",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/documents/1/download-file",
+              "host": ["{{base_url}}"],
+              "path": ["api", "documents", "1", "download-file"]
+            }
+          }
+        },
+        {
+          "name": "DELETE Xóa tài liệu theo ID",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/documents/32",
+              "host": ["{{base_url}}"],
+              "path": ["api", "documents", "32"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Nhóm 3 API Thống Kê Chuyên Sâu (Complex SQL)",
+      "item": [
+        {
+          "name": "GET Thống kê theo Danh mục (API 1 - LEFT JOIN, COUNT, SUM)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/stats/categories",
+              "host": ["{{base_url}}"],
+              "path": ["api", "stats", "categories"]
+            }
+          }
+        },
+        {
+          "name": "GET Thống kê theo Phòng ban (API 2 - 3 Bảng LEFT JOIN, COUNT, SUM)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/stats/departments",
+              "host": ["{{base_url}}"],
+              "path": ["api", "stats", "departments"]
+            }
+          }
+        },
+        {
+          "name": "GET Top 5 nhân viên đăng tải nhiều nhất (API 3 - INNER JOIN, ORDER BY, LIMIT 5)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/stats/top-uploaders",
+              "host": ["{{base_url}}"],
+              "path": ["api", "stats", "top-uploaders"]
+            }
+          }
+        },
+        {
+          "name": "GET Thống kê Tổng quan (Overview KPI)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/stats/overview",
+              "host": ["{{base_url}}"],
+              "path": ["api", "stats", "overview"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Dữ Liệu Nền (Master Data)",
+      "item": [
+        {
+          "name": "GET Danh sách danh mục (Categories)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/categories",
+              "host": ["{{base_url}}"],
+              "path": ["api", "categories"]
+            }
+          }
+        },
+        {
+          "name": "GET Danh sách phòng ban (Departments)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/departments",
+              "host": ["{{base_url}}"],
+              "path": ["api", "departments"]
+            }
+          }
+        },
+        {
+          "name": "GET Danh sách người dùng (Users)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/users",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
