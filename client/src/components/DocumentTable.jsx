@@ -12,7 +12,8 @@ import {
   ChevronLeft, 
   ChevronRight,
   UserCheck,
-  ShieldAlert
+  ShieldAlert,
+  BookOpen
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 
@@ -45,6 +46,7 @@ export default function DocumentTable({
   onPageChange,
   onPageSizeChange,
   onView,
+  onOpenReader,
   onDownload,
   onEdit,
   onDelete
@@ -223,7 +225,7 @@ export default function DocumentTable({
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <span 
-                              onClick={() => onView && onView(doc)}
+                              onClick={() => onOpenReader ? onOpenReader(doc) : (onView && onView(doc))}
                               className="font-bold text-slate-900 hover:text-blue-600 cursor-pointer truncate max-w-sm block transition"
                               title={doc.title}
                             >
@@ -291,11 +293,20 @@ export default function DocumentTable({
                     {/* RBAC Actions */}
                     <td className="py-3.5 px-4 text-center">
                       <div className="flex items-center justify-center gap-1.5">
-                        {/* 1. Nút Xem (View) */}
+                        {/* 1. Nút Đọc Toàn Văn (Reader) */}
+                        <button
+                          onClick={() => onOpenReader ? onOpenReader(doc) : (onView && onView(doc))}
+                          className="w-7 h-7 rounded-lg border border-slate-200 hover:border-blue-400 hover:bg-blue-50 text-slate-600 hover:text-blue-700 flex items-center justify-center transition shadow-2xs cursor-pointer"
+                          title="Đọc toàn văn văn bản này"
+                        >
+                          <BookOpen className="w-3.5 h-3.5 text-blue-600" />
+                        </button>
+
+                        {/* 1b. Nút Xem chi tiết siêu dữ liệu (Modal) */}
                         <button
                           onClick={() => onView && onView(doc)}
                           className="w-7 h-7 rounded-lg border border-slate-200 hover:border-slate-300 hover:bg-slate-100 text-slate-600 flex items-center justify-center transition shadow-2xs cursor-pointer"
-                          title="Xem chi tiết tài liệu"
+                          title="Xem chi tiết siêu dữ liệu CSDL"
                         >
                           <Eye className="w-3.5 h-3.5" />
                         </button>

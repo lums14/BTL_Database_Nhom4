@@ -297,6 +297,7 @@ export default function RepositoryView({
             setCurrentPage(1);
           }}
           onView={(doc) => setViewingDoc(doc)}
+          onOpenReader={(doc) => onSelectDoc && onSelectDoc(doc)}
           onDownload={handleDownload}
           onEdit={handleEdit}
           onDelete={handleDelete}
@@ -422,6 +423,10 @@ export default function RepositoryView({
         onClose={() => setViewingDoc(null)}
         document={viewingDoc}
         onDownload={handleDownload}
+        onOpenReader={(doc) => {
+          setViewingDoc(null);
+          if (onSelectDoc) onSelectDoc(doc);
+        }}
       />
     </div>
   );

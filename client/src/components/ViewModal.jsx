@@ -1,11 +1,12 @@
 import React from 'react';
-import { Eye, X, Download, Tag, User, Building2, HardDrive, ArrowDownToLine, Clock } from 'lucide-react';
+import { Eye, X, Download, Tag, User, Building2, HardDrive, ArrowDownToLine, Clock, BookOpen } from 'lucide-react';
 
 export default function ViewModal({
   isOpen,
   onClose,
   document,
-  onDownload
+  onDownload,
+  onOpenReader
 }) {
   if (!isOpen || !document) return null;
 
@@ -108,22 +109,34 @@ export default function ViewModal({
         </div>
 
         {/* Footer */}
-        <div className="p-4 px-6 border-t border-slate-100 flex items-center justify-end gap-3 bg-slate-50">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-xl border border-slate-300 text-slate-600 font-semibold text-xs hover:bg-white transition"
-          >
-            Đóng
-          </button>
+        <div className="p-4 px-6 border-t border-slate-100 flex items-center justify-between gap-3 bg-slate-50">
           <button
             onClick={() => {
-              onDownload(document);
+              if (onOpenReader) onOpenReader(document);
               onClose();
             }}
-            className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-sm transition flex items-center gap-2"
+            className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-black text-white font-semibold text-xs shadow-xs transition flex items-center gap-2 cursor-pointer"
           >
-            <Download className="w-4 h-4" /> Tải Về Máy
+            <BookOpen className="w-4 h-4 text-amber-400" /> Đọc Toàn Văn
           </button>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onClose}
+              className="px-3.5 py-2 rounded-xl border border-slate-300 text-slate-600 font-semibold text-xs hover:bg-white transition cursor-pointer"
+            >
+              Đóng
+            </button>
+            <button
+              onClick={() => {
+                onDownload(document);
+                onClose();
+              }}
+              className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-xs transition flex items-center gap-2 cursor-pointer"
+            >
+              <Download className="w-4 h-4" /> Tải Về
+            </button>
+          </div>
         </div>
       </div>
     </div>

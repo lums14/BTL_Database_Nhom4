@@ -41,25 +41,10 @@ export default function App() {
   const [users, setUsers] = useState([]);
   const [documents, setDocuments] = useState([]);
 
-  const loadData = async () => {
-    const [cats, depts, usrs, docs] = await Promise.all([
-      fetchCategories(),
-      fetchDepartments(),
-      fetchUsers(),
-      fetchDocuments()
-    ]);
-    setCategories(cats);
-    setDepartments(depts);
-    setUsers(usrs);
-    setDocuments(docs);
-  };
-
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const handleSelectDocFromRepo = (docItem) => {
-    setSelectedDoc({
+  const formatDocForReader = (docItem) => {
+    if (!docItem) return null;
+    return {
+      ...docItem,
       doc_id: docItem.doc_id || docItem.id,
       title: docItem.title,
       articleTitle: (docItem.title || '').replace(/\.[^/.]+$/, '').replace(/_/g, ' '),
@@ -81,7 +66,31 @@ export default function App() {
         { initials: 'TG', name: docItem.uploader_name || 'Tác Giả', role: 'CHỦ SỞ HỮU', permission: 'Biên Tập & Xóa' },
         { initials: 'NV', name: 'Toàn Thể Nhân Viên (Staff)', role: 'THÀNH VIÊN', permission: 'Chỉ Đọc & Tải' },
       ]
-    });
+    };
+  };
+
+  const loadData = async () => {
+    const [cats, depts, usrs, docs] = await Promise.all([
+      fetchCategories(),
+      fetchDepartments(),
+      fetchUsers(),
+      fetchDocuments()
+    ]);
+    setCategories(cats);
+    setDepartments(depts);
+    setUsers(usrs);
+    setDocuments(docs);
+    if (docs && docs.length > 0) {
+      setSelectedDoc(prev => prev || formatDocForReader(docs[0]));
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const handleSelectDocFromRepo = (docItem) => {
+    setSelectedDoc(formatDocForReader(docItem));
     setActiveTab('reader');
   };
 
@@ -181,6 +190,8 @@ export default function App() {
         {activeTab === 'reader' && (
           <DocumentReaderView
             selectedDoc={selectedDoc}
+            documents={documents}
+            onSelectDoc={handleSelectDocFromRepo}
             onDownload={handleDownload}
           />
         )}
